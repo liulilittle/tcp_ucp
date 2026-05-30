@@ -127,7 +127,7 @@ R = min(R, R_base × ucp_kalman_r_max_boost)
 
 **Переход Калмана**: когда `x_est > 0` и `sample_cnt ≥ ucp_kalman_min_samples` (по умолчанию 5), `min_rtt_us` заменяется на `x_est / ucp_kalman_scale`. `min_rtt_stamp` не обновляется — триггер интервала PROBE_RTT остается независимым.
 
-**Предел запаса x_est**: Полученное из Калмана `model_rtt` ограничено значением `min_rtt_us × (100 + ucp_kalman_xest_margin_pct) / 100` (по умолчанию 8%).
+Модель min-rtt x_est: Полученное из Калмана model_rtt использует min(x_est_us, min_rtt_us) — меньшее из двух.
 
 ## Улучшения BBR
 

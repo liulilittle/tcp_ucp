@@ -127,7 +127,7 @@ R = min(R, R_base × ucp_kalman_r_max_boost)
 
 **استلام كالمان**: عندما `x_est > 0` و `sample_cnt ≥ ucp_kalman_min_samples` (افتراضي 5)، يتم استبدال `min_rtt_us` بـ `x_est / ucp_kalman_scale`. لا يتم تحديث `min_rtt_stamp` — يبقى مؤقت PROBE_RTT مستقلاً.
 
-**حد margin لتقدير x_est**: يتم تحديد السقف لتقدير `model_rtt` المستمد من كالمان عند `min_rtt_us × (100 + ucp_kalman_xest_margin_pct) / 100` (الافتراضي 8٪).
+نموذج min-rtt لـ x_est: يستخدم model_rtt المشتق من كالمان min(x_est_us, min_rtt_us) — الأصغر من الاثنين.
 
 ## تحسينات BBR
 

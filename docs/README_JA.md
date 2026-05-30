@@ -127,7 +127,7 @@ R = min(R, R_base × ucp_kalman_r_max_boost)
 
 **カルマン制御引き継ぎ**：`x_est > 0` かつ `sample_cnt ≥ ucp_kalman_min_samples`（デフォルト 5）の場合、`min_rtt_us` は `x_est / ucp_kalman_scale` に置き換えられる。`min_rtt_stamp` は更新されない — PROBE_RTT 間隔トリガーは独立したまま。
 
-**x_est マージン上限**: カルマンから導出された `model_rtt` は `min_rtt_us × (100 + ucp_kalman_xest_margin_pct) / 100`（デフォルト 8%）に制限されます。
+x_est 最小RTTモデル：カルマン導出の model_rtt は min(x_est_us, min_rtt_us) を使用 — カルマン推定値とウィンドウ最小値の小さい方。
 
 ## BBR 拡張機能
 

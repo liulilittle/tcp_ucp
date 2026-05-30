@@ -125,7 +125,7 @@ R = min(R, R_base × ucp_kalman_r_max_boost)
 
 **칼만 인계**: `x_est > 0`이고 `sample_cnt ≥ ucp_kalman_min_samples`(기본값 5)인 경우, `min_rtt_us`가 `x_est / ucp_kalman_scale`로 대체됩니다. `min_rtt_stamp`는 업데이트되지 않습니다——PROBE_RTT 간격 트리거는 독립적으로 유지됩니다.
 
-**x_est 마진 상한**: 칼만에서 파생된 `model_rtt`는 `min_rtt_us × (100 + ucp_kalman_xest_margin_pct) / 100`(기본값 8%)로 제한됩니다.
+x_est 최소RTT 모델：칼만 파생 model_rtt는 min(x_est_us, min_rtt_us)를 사용 — 칼만 추정치와 윈도우 최소값 중 작은 쪽.
 
 ## BBR 개선 사항
 

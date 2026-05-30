@@ -127,7 +127,7 @@ R = min(R, R_base × ucp_kalman_r_max_boost)
 
 **卡尔曼接管**：`x_est > 0` 且 `sample_cnt ≥ ucp_kalman_min_samples`（默认 5）时，`min_rtt_us` 被替换为 `x_est / ucp_kalman_scale`。`min_rtt_stamp` 不更新——PROBE_RTT 间隔独立保留。
 
-**x_est 上界封顶**：卡尔曼推导的 `model_rtt` 被限制在 `min_rtt_us × (100 + ucp_kalman_xest_margin_pct) / 100`（默认 8%）。
+x_est 最小RTT模型：卡尔曼推导的 model_rtt 使用 min(x_est_us, min_rtt_us) — 卡尔曼估计与窗口最小值中较小的那个。这使卡尔曼能发现比窗口 min 更低的 RTT，但防止 x_est 膨胀 BDP 超过窗口最小值。
 
 ## BBR 增强特性
 

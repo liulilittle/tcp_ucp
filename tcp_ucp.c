@@ -979,8 +979,6 @@ static int ucp_kalman_q_boost_ms = 1;                     /* Q-boost time consta
 module_param_cb(ucp_kalman_q_boost_ms, &ucp_param_ops, &ucp_kalman_q_boost_ms, 0644); /* sysctl: ucp_kalman_q_boost_ms */
 static int ucp_kalman_qboost_cdwn = 15;              /* Q-boost cooldown: min samples between events (prevents runaway on lossy paths) */
 module_param_cb(ucp_kalman_qboost_cdwn, &ucp_param_ops, &ucp_kalman_qboost_cdwn, 0644); /* sysctl: ucp_kalman_qboost_cdwn */
-static int ucp_kalman_xest_margin_pct = 8;           /* x_est margin above min_rtt in percent (0..100, default 8) */
-module_param_cb(ucp_kalman_xest_margin_pct, &ucp_param_ops, &ucp_kalman_xest_margin_pct, 0644); /* sysctl: ucp_kalman_xest_margin_pct */
 static int ucp_kalman_scale = 1024;                       /* Kalman fixed-point scale (power-of-two) */
 module_param_cb(ucp_kalman_scale, &ucp_param_ops, &ucp_kalman_scale, 0644); /* sysctl: ucp_kalman_scale */
 
@@ -1685,7 +1683,6 @@ static void ucp_init_module_params(void)                          /* clamp all p
     ucp_kalman_outlier_ms = clamp(ucp_kalman_outlier_ms, 0, 10000);      /* outlier ms [0, 10k] */
     ucp_kalman_q_boost_ms = clamp(ucp_kalman_q_boost_ms, 1, 5000);       /* Q-boost ms [1, 5000] */
     ucp_kalman_qboost_cdwn = clamp(ucp_kalman_qboost_cdwn, 1, 255);      /* Q-boost cooldown [1, 255] */
-    ucp_kalman_xest_margin_pct = clamp(ucp_kalman_xest_margin_pct, 0, 100); /* x_est margin pct [0, 100] */
     ucp_kalman_scale = clamp(ucp_kalman_scale, 64, 1048576);              /* kalman scale [64, 1M] */
     ucp_kalman_scale = roundup_pow_of_two(ucp_kalman_scale);              /* round up to power of two */
 
@@ -2515,13 +2512,18 @@ static u32 ucp_get_model_rtt(const struct sock* sk,                            /
 
     {
         u32 x_est_us = ext->x_est >> ucp_kalman_scale_shift_val;           /* descale Kalman estimate to µs */
-        u32 cap_us = ucp->min_rtt_us;                                    /* default: no margin (margin == 0) */
-        u32 model_rtt = max_t(u32, x_est_us, ucp->min_rtt_us);           /* floor at min_rtt_us */
-        if (ucp_kalman_xest_margin_pct > 0) {
-            u64 cap64 = (u64)ucp->min_rtt_us * (u32)(UCP_PCT_BASE + ucp_kalman_xest_margin_pct) / UCP_PCT_BASE;
-            cap_us = (u32)min_t(u64, cap64, U32_MAX);
+        /*
+         * Use the minimum of Kalman estimate and windowed min_rtt.
+         * x_est may discover a lower RTT than the windowed min (deeper
+         * valleys between congestion events).  But it can never inflate
+         * BDP beyond the windowed min — preventing the over-aggression
+         * that causes retransmit variance on lossy or short-RTT paths.
+         */
+        u32 model_rtt = min_t(u32, x_est_us, ucp->min_rtt_us);
+        if (model_rtt < 1) {
+            model_rtt = 1;
         }
-        return min_t(u32, model_rtt, cap_us);                            /* cap at min_rtt * (100+margin)/100 */
+        return model_rtt;
     }
 }
 
@@ -5887,7 +5889,6 @@ static struct ctl_table ucp_ctl_table[] = {                                     
     {.procname = "ucp_kalman_outlier_ms",       .data = &ucp_kalman_outlier_ms,       .maxlen = sizeof(int), .mode = 0644, .proc_handler = ucp_proc_handler }, /* outlier base timeout (ms) */
     {.procname = "ucp_kalman_q_boost_ms",       .data = &ucp_kalman_q_boost_ms,       .maxlen = sizeof(int), .mode = 0644, .proc_handler = ucp_proc_handler }, /* Q-boost time constant (ms) */
     {.procname = "ucp_kalman_qboost_cdwn",       .data = &ucp_kalman_qboost_cdwn,       .maxlen = sizeof(int), .mode = 0644, .proc_handler = ucp_proc_handler }, /* Q-boost cooldown (samples) */
-    {.procname = "ucp_kalman_xest_margin_pct",  .data = &ucp_kalman_xest_margin_pct,  .maxlen = sizeof(int), .mode = 0644, .proc_handler = ucp_proc_handler }, /* x_est margin above min_rtt (%) */
     {.procname = "ucp_kalman_scale",            .data = &ucp_kalman_scale,            .maxlen = sizeof(int), .mode = 0644, .proc_handler = ucp_proc_handler }, /* Kalman fixed-point scale */
     {.procname = "ucp_kalman_outlier_jitter_mult_num", .data = &ucp_kalman_outlier_jitter_mult_num, .maxlen = sizeof(int), .mode = 0644, .proc_handler = ucp_proc_handler }, /* outlier jitter mult numerator */
     {.procname = "ucp_kalman_outlier_jitter_mult_den", .data = &ucp_kalman_outlier_jitter_mult_den, .maxlen = sizeof(int), .mode = 0644, .proc_handler = ucp_proc_handler }, /* outlier jitter mult denominator */

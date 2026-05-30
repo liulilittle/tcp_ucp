@@ -127,7 +127,7 @@ R = min(R, R_base × ucp_kalman_r_max_boost)
 
 **Assunção de controle do Kalman**: quando `x_est > 0` e `sample_cnt ≥ ucp_kalman_min_samples` (padrão 5), `min_rtt_us` é substituído por `x_est / ucp_kalman_scale`. `min_rtt_stamp` não é atualizado — o gatilho do intervalo PROBE_RTT permanece independente.
 
-**Limite de margem x_est**: O `model_rtt` derivado de Kalman é limitado a `min_rtt_us × (100 + ucp_kalman_xest_margin_pct) / 100` (padrão 8%).
+Modelo min-rtt x_est: O model_rtt derivado de Kalman usa min(x_est_us, min_rtt_us) — o menor dos dois.
 
 ## Melhorias do BBR
 

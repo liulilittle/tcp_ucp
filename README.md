@@ -127,7 +127,7 @@ R = min(R, R_base × ucp_kalman_r_max_boost)
 
 **Kalman takeover**: when `x_est > 0` and `sample_cnt ≥ ucp_kalman_min_samples` (default 5), `min_rtt_us` is replaced by `x_est / ucp_kalman_scale`. `min_rtt_stamp` is not updated — PROBE_RTT interval trigger remains independent.
 
-**x_est margin cap**: the Kalman-derived `model_rtt` is capped at `min_rtt_us × (100 + ucp_kalman_xest_margin_pct) / 100` (default 8%).  This prevents Kalman/qboost inflation from creating an inflated BDP on noisy paths while preserving the competitiveness benefit (x_est > min_rtt) on shared VPS paths with real queuing.
+**x_est min-rtt model**: the Kalman-derived `model_rtt` uses `min(x_est_us, min_rtt_us)` — the smaller of the Kalman estimate and the windowed minimum.  This allows Kalman to discover lower RTTs than the windowed min (deeper valleys between congestion events), but prevents x_est from inflating BDP beyond the windowed minimum.  The result is a more accurate propagation-delay baseline that naturally avoids the over-aggression responsible for retransmit variance on high-loss and short-RTT paths.
 
 ## BBR Enhancements
 
